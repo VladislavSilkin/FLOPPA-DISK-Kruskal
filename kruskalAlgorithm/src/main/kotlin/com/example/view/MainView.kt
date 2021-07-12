@@ -1,27 +1,36 @@
 package com.example.view
 
+import com.example.Edge
 import com.example.KruskalController
 import com.example.KruskalWork
 import com.example.Vertex
 import javafx.geometry.Pos
-import javafx.scene.Group
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
-import javafx.scene.layout.AnchorPane
 import javafx.scene.paint.Color
 import javafx.scene.shape.Circle
 import javafx.scene.shape.Line
+import javafx.scene.text.Font
+import javafx.scene.text.Text
 import javafx.stage.FileChooser
+import javafx.stage.Stage
 import tornadofx.*
+import java.awt.event.ActionListener
 import java.io.File
 import java.io.FileInputStream
 import java.lang.Exception
+import java.util.*
+import kotlin.collections.ArrayList
+import kotlin.math.atan
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.system.exitProcess
 
 class MainView : View("Kruskal Algorithm") {
     private val extensions = arrayOf(FileChooser.ExtensionFilter("TXT files (*.txt)", "*.txt"))
-    val kruskalController: KruskalController by inject()
-    var kruskalWork = KruskalWork()
-    var workspaces = AnchorPane()
+    private val kruskalController: KruskalController by inject()
+    private var printGraphData = ArrayList<Edge>()
+    private var loaded = false
 
     override val root = vbox {
         menubar {
@@ -30,18 +39,27 @@ class MainView : View("Kruskal Algorithm") {
                     action {
                         val pathGraph: List<File> =
                             chooseFile("Choose graph file", extensions, null, FileChooserMode.Single)
-                        try {
-                            kruskalWork = kruskalController.callCreateGraph(pathGraph)
-                        } catch (e: Exception) {
-                            println(e)
-                            System.exit(1)
+                        if(pathGraph.isNotEmpty()) {
+                            try {
+                                kruskalController.callCreateGraph(pathGraph)
+                            } catch (e: Exception) {
+                                println(e)
+                                exitProcess(1)
+                            }
+                            printGraphData = kruskalController.callGetGraph()
+                            printGraph()
+                            loaded = true
                         }
-                        getGraph()
                     }
                 }
-                item("Save")
+                item("Save"){
+                    action{
+                        val saveFile: File = FileChooser().showSaveDialog(Stage())
+                        kruskalController.callSaveGraph(saveFile)
+                    }
+                }
                 item("Exit") {
-                    action { System.exit(0) }
+                    action { exitProcess(0) }
                 }
             }
             menu("Help") {
@@ -52,104 +70,175 @@ class MainView : View("Kruskal Algorithm") {
         hbox {
             alignment = Pos.TOP_RIGHT
             val prevImageView = ImageView(Image(FileInputStream("./src/main/resources/left.png")))
-            button("Previous Step", prevImageView) {}
-
-            val playPath = FileInputStream("./src/main/resources/play.png")
-            val playImage = Image(playPath)
-            val playImageView = ImageView(playImage)
-            button("Start", playImageView) {
-                action {
-                    tools.clear()
-                    kruskalWork.doKruskal()
-                    kruskalWork.modifyGraph()
-                    getGraph()
-                }
+            button("Previous Step", prevImageView) {
             }
 
-            val nextPath = FileInputStream("./src/main/resources/next.png")
-            val nextImage = Image(nextPath)
-            val nextImageView = ImageView(nextImage)
-            button("Next Step", nextImageView) {}
+            val playImageView = ImageView(Image(FileInputStream("./src/main/resources/play.png")))
+            button("Start", playImageView) {
+                    //isDisable = false
+                    action {
+                        if (loaded) {
+                            tools.clear()
+                            kruskalController.callDoKruskal()
+                            kruskalController.callUpdatePrintData()
+                            printGraphData = kruskalController.callGetGraph()
+                            printGraph()
+                        }
+                    }
+                    //isDisable = true
+            }
+
+            val nextImageView = ImageView(Image(FileInputStream("./src/main/resources/next.png")))
+            button("Next Step", nextImageView) {
+            }
 
             val fastImageView = ImageView(Image(FileInputStream("./src/main/resources/fast-forward.png")))
-            button("Fast End", fastImageView) {}
+            button("Fast End", fastImageView) {
+            }
 
             val clearImageView = ImageView(Image(FileInputStream("./src/main/resources/free.png")))
             button("Clear Field", clearImageView) {
-
+                action {
+                    tools.clear()
+                    kruskalController.callClearGraph()
+                    loaded = false
+                }
             }
         }
-        hbox{
-            button()
+        hbox {
+            button {
+                this.isVisible = false
+            }
         }
     }
-    val tools = anchorpane{
-       /*
-            */
-
+    private val tools = anchorpane {
     }
-   // val tools = hbox{
 
-    //}
+    private fun printGraph() {
+        val vertexes = kruskalController.callGetVertexes()
+        val coords: MutableMap<String, Vertex> = getCoords(vertexes)
 
-    fun getGraph() {
-        val graphGroup = Group()
-        // val kruskalWork = KruskalWork().graph
-        val vertexes = kruskalWork.vectorOfVertex
-        var tempCoords = Pair<Double, Double>(0.0, 0.0)
-        val countVertex = kruskalWork.vectorOfVertex.size
-        var tempNumVertex = 1
-        var arrayOfCoords = ArrayList<Pair<Double, Double>>()
-        var coords: MutableMap<String, Vertex> = mutableMapOf()
+        tools.clear()
 
-        for (item in kruskalWork.vectorOfVertex) {
-            coords[item.toString()] = Vertex(
-                item.toString(),
-                getCoords(tempNumVertex, countVertex).first,
-                getCoords(tempNumVertex, countVertex).second
-            )
-            tempNumVertex++
-        }
-        println("T")
-        for (item in kruskalWork.printGraph) {
+        for (item in printGraphData) {
+            val angle = atan((coords[item.v2]!!.y - coords[item.v1]!!.y) / (coords[item.v2]!!.x - coords[item.v1]!!.x))
             if (item.flag == 0)
-                tools.add(createLine(coords[item.v1], coords[item.v2], false))
+                tools.add(createLine(coords[item.v1], coords[item.v2], angle, false))
             else
-                tools.add(createLine(coords[item.v1], coords[item.v2], true))
+                tools.add(createLine(coords[item.v1], coords[item.v2], angle, true))
+            addTextOnLines(coords, angle)
         }
 
-        for (item in vertexes)
+        for (item in vertexes) {
+            val tempText = when (item) {
+                in "bhk" -> Text(coords[item]!!.x - 10, coords[item]!!.y + 15, coords[item]!!.name) // Вниз
+                in "gmdqw" -> Text(coords[item]!!.x - 15, coords[item]!!.y + 12, coords[item]!!.name) // Влево
+                in "jtr" -> Text(coords[item]!!.x - 5, coords[item]!!.y + 12, coords[item]!!.name) // Вправо
+                in "ilf" -> Text(coords[item]!!.x - 5, coords[item]!!.y + 15, coords[item]!!.name) // Вниз и вправо
+                else -> Text(coords[item]!!.x - 10, coords[item]!!.y + 12, coords[item]!!.name)
+            }
+            tempText.font = Font("Times New Roman", 36.0)
+
             tools.add(createNode(coords[item]))
-
-    }
-
-    fun getCoords(temp: Int, count: Int): Pair<Double, Double> {
-        if(temp <= (count/2+1))
-            return Pair(100.0*temp-75.0, 0.0)
-        else
-            return Pair(100.0*temp - (100.0*(count/2+1)-75.0), 100.0)
-    }
-
-    fun createNode(a: Vertex?): Circle {
-        if (a != null) {
-            val circle = Circle(a.x, a.y, 25.0)
-            return circle
+            tools.add(tempText)
         }
-        return Circle()
+
     }
 
-    fun createLine(a: Vertex?, b: Vertex?, flag: Boolean): Line{
+    private fun getCoords(vertexes: ArrayList<String>): MutableMap<String, Vertex> {
+        val coords: MutableMap<String, Vertex> = mutableMapOf()
+        val countOfVertex = vertexes.size
+        val angle = (countOfVertex - 2) * 180 / countOfVertex
+        val radius = 175.0
+        val phi = 45.0 + (180.0 - angle) / 2
+        var temp = 0
+
+        for (item in vertexes) {
+            coords[item] = Vertex(
+                item,
+                (600.0 + radius * cos(180.0 + 2 * Math.PI * temp / countOfVertex)),
+                (275.0 + radius * sin(180.0 + 2 * Math.PI * temp / countOfVertex))
+            )
+            temp++
+        }
+
+        return coords
+    }
+
+    private fun createNode(a: Vertex?): Circle {
+        val circle = Circle(a!!.x, a.y, 25.0)
+        circle.fill = null
+        circle.stroke = Color.BLACK
+        return circle
+    }
+
+    private fun createLine(a: Vertex?, b: Vertex?, angle: Double, flag: Boolean): Line {
         if (a != null) {
             if (b != null) {
-                return if(flag) {
-                    val line = Line(a.x, a.y, b.x, b.y)
+                val line: Line
+                when {
+                    returnQuater(a.x, a.y, b.x, b.y) == 1 -> line = Line(
+                        a.x + cos(angle) * 25.0,
+                        a.y + sin(angle) * 25.0,
+                        b.x - cos(angle) * 25.0,
+                        b.y - sin(angle) * 25.0
+                    )
+                    returnQuater(a.x, a.y, b.x, b.y) == 2 -> line = Line(
+                        a.x - cos(angle) * 25.0,
+                        a.y - sin(angle) * 25.0,
+                        b.x + cos(angle) * 25.0,
+                        b.y + sin(angle) * 25.0
+                    )
+                    returnQuater(a.x, a.y, b.x, b.y) == 3 -> line = Line(
+                        a.x - cos(angle) * 25.0,
+                        a.y - sin(angle) * 25.0,
+                        b.x + cos(angle) * 25.0,
+                        b.y + sin(angle) * 25.0
+                    )
+                    else -> line = Line(
+                        a.x + cos(angle) * 25.0,
+                        a.y + sin(angle) * 25.0,
+                        b.x - cos(angle) * 25.0,
+                        b.y - sin(angle) * 25.0
+                    )
+                }
+                if(flag)
                     line.stroke = Color.RED
-                    line
-                } else
-                    Line(a.x, a.y, b.x, b.y)
+                line.text("Hello")
+                //val txt = Text("Hello")
+               // line.text = Text("Hello")
+                //tools.add(line.text())
+                return line
             }
         }
         return Line()
     }
 
+    private fun returnQuater(x1: Double, y1: Double, x2: Double, y2: Double): Int{
+        return if(x2 - x1 > 0 && y2 - y1 < 0)
+            1
+        else if(x2 - x1 < 0 && y2 - y1 < 0)
+            2
+        else if(x2 - x1 < 0 && y2 - y1 > 0)
+            3
+        else
+            4
+    }
+
+    private fun addTextOnLines(coords: MutableMap<String, Vertex>, angle: Double) {
+       for(item in printGraphData) {
+           val x1 = coords[item.v1]!!.x
+           val x2 = coords[item.v2]!!.x
+           val y1 = coords[item.v1]!!.y
+           val y2 = coords[item.v2]!!.y
+           val tempText: Text = when(returnQuater(x1, y1, x2, y2)){
+               1 -> Text((x2+x1)/2, (y2+y1)/2, item.weight.toString())
+               2 -> Text((x2+x1)/2, (y2+y1)/2, item.weight.toString())
+               3 -> Text((x2+x1)/2, (y2+y1)/2, item.weight.toString())
+               else -> Text((x2+x1)/2, (y2+y1)/2, item.weight.toString())
+           }
+           tempText.font = Font("Times New Roman", 20.0)
+           tools.add(tempText)
+       }
+    }
 }

@@ -19,7 +19,7 @@ class KruskalWork {
 
     fun createGraph(list: List<String>) : KruskalWork {
         for (item in list[0].split(" ")) {
-            vectorOfVertex.add(item.toString())
+            vectorOfVertex.add(item)
         }
         for (name in vectorOfVertex) {
             val node = Node(name)
@@ -50,7 +50,7 @@ class KruskalWork {
                 Edge(
                     list[i].split(" ")[0].toString(),
                     list[i].split(" ")[1].toString(),
-                    (list[i].split(" ")[2].toDouble() - 48), 0
+                    (list[i].split(" ")[2].toDouble()), 0
                 )
             )
         }
@@ -66,15 +66,15 @@ class KruskalWork {
     fun doKruskal(){
         allEdges.sortBy { it -> it.weight }
 
-        var countVertex = vectorOfVertex.count()
+        val countVertex = vectorOfVertex.count()
         var countOfAddedNodes = 0
         for (edge in allEdges){
             if (!checkCycle(resGraph,edge)){
                 resEdgeVector.addElement(edge)
-                var edge1 = Edge(edge.v1,edge.v2,edge.weight, 0)
-                var edge2 = Edge(edge.v2, edge.v1, edge.weight, 0)
-                var froms = edge.v1
-                var tos = edge.v2
+                val edge1 = Edge(edge.v1,edge.v2,edge.weight, 0)
+                val edge2 = Edge(edge.v2, edge.v1, edge.weight, 0)
+                val froms = edge.v1
+                val tos = edge.v2
                 resGraph[froms]?.addEdge(edge1)
                 resGraph[tos]?.addEdge(edge2)
                 countOfAddedNodes++
@@ -186,5 +186,14 @@ class KruskalWork {
 
         return status
 
+    }
+
+    fun clearGraph(){
+        vectorOfVertex.clear()
+        graph.clear()
+        resGraph.clear()
+        printGraph.clear()
+        allEdges.clear()
+        resEdgeVector.clear()
     }
 }
