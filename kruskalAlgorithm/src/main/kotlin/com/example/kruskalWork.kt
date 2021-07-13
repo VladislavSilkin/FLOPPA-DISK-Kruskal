@@ -2,9 +2,11 @@ package com.example
 
 import Node
 import tornadofx.property
+import java.io.File
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
+import kotlin.math.log
 
 class KruskalWork {
 
@@ -17,7 +19,9 @@ class KruskalWork {
     var temp = 0
     var components = Vector<String>()
     var steps = ArrayList<ArrayList<Edge>>()
-
+    val resPrint = ArrayList<Edge>()
+    val logs = File("./src/main/resources/logs.txt")
+    var logText = String()
 
 
     fun createGraph(list: List<String>) : KruskalWork {
@@ -81,9 +85,22 @@ class KruskalWork {
                 var edge2 = Edge(edge.v2,edge.v1,edge.weight, 0)
                 resGraph[edge.v2]?.addEdge(edge2)
                 resEdgeVector.addElement(edge)
-            }
-            for(item in resEdgeVector){
-                temp.add(Edge(item.v1, item.v2, item.weight, 1))
+                for(item in resEdgeVector){
+                    temp.add(Edge(item.v1, item.v2, item.weight, 1))
+                    resPrint.add(Edge(item.v1, item.v2, item.weight, 1))
+                }
+                for(item in allEdges) {
+                    var flag = true
+                    for(item1 in temp) {
+                        if (item.v1 == item1.v1 && item.v2 == item1.v2 && item.weight == item1.weight && item.flag != item1.flag) {
+                            flag = false
+                            break
+                        }
+                    }
+                    if(flag)
+                        temp.add(item)
+                }
+                steps.add(temp)
             }
 //        compUniting(edge,components)
 //        var tmpGraph=cloneGraph(resGraph)
@@ -94,16 +111,17 @@ class KruskalWork {
 //            resGraph[edge.v2]?.addEdge(edge2)
 //            resEdgeVector.addElement(edge)
 //        }
-            steps.add(temp)
         }   //abdcf
+        steps.add(resPrint)
         printAllEdges(resEdgeVector)
-        println("==================")
+        logText += "==================\n"
         printGraph(resGraph)
         var resLength =0.0
         for (elem in resEdgeVector){
             resLength += elem.weight
         }
-        println(resLength)
+        logText += resLength
+        logs.writeText(logText)
     }
 
     fun whichRemove(v:String, components: Vector<String>): String {
@@ -130,17 +148,16 @@ class KruskalWork {
         components.removeElement(whichRemove(edge.v1,components))
         components.removeElement(whichRemove(edge.v2,components))
         components.addElement(a+b)
-        println(components)
+        logText += "${components}\n"
         return components
     }
 
     fun printGraph(graph: HashMap<String, Node>/*, a:Int*/){
 //    println("Printed graph $a")
         for (elem in graph){
-            print("${elem.key} : \n")
-            elem.value.printEdges()
-            println("Degree = ${elem.value.degree}")
-            print("\n")
+            logText += "${elem.key} : \n"
+            logText += elem.value.printEdges()
+            logText += "Degree = ${elem.value.degree}\n"
         }
     }
 
@@ -158,14 +175,14 @@ class KruskalWork {
 
     fun printMutableGraph(graph: MutableMap<String, Node>){
         for (elem in graph){
-            elem.value.printEdges()
+            logText += elem.value.printEdges()
         }
     }
 
     fun printAllEdges(edges: Vector<Edge>){
-        println("All/Result Edges:")
+        logText += "All/Result Edges:\n"
         for (elem in edges){
-            elem.printEdge()
+            logText += elem.printEdge()
         }
     }
 
@@ -246,5 +263,8 @@ class KruskalWork {
         allEdges.clear()
         resEdgeVector.clear()
         components.clear()
+        steps.clear()
+        resPrint.clear()
+        temp = 0
     }
 }

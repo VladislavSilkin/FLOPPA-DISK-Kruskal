@@ -3,76 +3,99 @@ package com.example
 import tornadofx.Controller
 import java.io.File
 
-class KruskalController : Controller(){
+class KruskalController : Controller() {
     private val workGraph = KruskalWork()
-    fun callCreateGraph(path: List<File>) : KruskalWork{
+    var isNextStep = false
+    private var isStart = false
+    var isLast = false
+    fun callCreateGraph(path: List<File>): KruskalWork {
         val fileGraph = File(path[0].toString())
-        val rightLine = ArrayList<String>()
 
-        for(item in fileGraph.readLines()[0]){
-            if(!item.isLetter() && item != ' ')
+        for (item in fileGraph.readLines()[0]) {
+            if (!item.isLetter() && item != ' ')
                 throw Exception("Wrong vertexName")
         }
 
-       // for(item in fileGraph.readLines())
-        //    rightLine.add(getStringWithoutSpaces(item))
         return workGraph.createGraph(fileGraph.readLines())
     }
 
-    fun callSaveGraph(saveFile: File){
+    fun callSaveGraph(saveFile: File) {
         var writeString = String()
-        for(item in workGraph.vectorOfVertex){
-            if(item == workGraph.vectorOfVertex[workGraph.vectorOfVertex.size-1])
+        for (item in workGraph.vectorOfVertex) {
+            if (item == workGraph.vectorOfVertex[workGraph.vectorOfVertex.size - 1])
                 writeString += "$item\n"
             else
                 writeString += "$item "
         }
 
-        for(item in workGraph.printGraph){
+        for (item in workGraph.printGraph) {
             writeString += "${item.v1} ${item.v2} ${item.weight.toString()}\n"
         }
 
         saveFile.writeText(writeString)
     }
 
-    fun callGetGraph() : ArrayList<Edge>{
+    fun callGetGraph(): ArrayList<Edge> {
+        isStart = true
         return workGraph.printGraph
     }
 
-    fun callGetVertexes() : ArrayList<String>{
+    fun callGetVertexes(): ArrayList<String> {
         return workGraph.vectorOfVertex
     }
 
-    fun callDoKruskal(){
+    fun callDoKruskal() {
         workGraph.doKruskal()
     }
 
-    fun callClearGraph(){
+    fun callClearGraph() {
         workGraph.clearGraph()
     }
 
-    fun callUpdatePrintData(){
+    fun callUpdatePrintData() {
         workGraph.modifyGraph()
     }
 
-    fun getStringWithoutSpaces(changeString: String) : String{
+    fun getStringWithoutSpaces(changeString: String): String {
         var outputString = String()
-        for(item in changeString) {
-            outputString += if (item != changeString[changeString.length - 1])
-                "$item "
-            else
-                "$item"
+        var counter = 0
+        for (item in changeString.split(" ")) {
+            if (item != "")
+                if(counter != changeString.split(" ").size-1)
+                    outputString += "$item "
+                else
+                    outputString += item
+            counter++
         }
         return outputString
     }
 
-    fun callStepNext() : ArrayList<Edge>{
-        if(workGraph.temp != workGraph.steps.size) {
-            val returnData = workGraph.steps[workGraph.temp]
-            workGraph.temp++
-            return returnData
-        }
-        else
-            return ArrayList()
+    fun callStart() : ArrayList<Edge> {
+        isNextStep = true
+        return workGraph.steps[workGraph.temp]
     }
+
+    fun callStepNext(): ArrayList<Edge> {
+            if (workGraph.temp < workGraph.steps.size - 1) {
+                if (isNextStep)
+                    workGraph.temp++
+                else
+                    workGraph.temp += 2
+                return workGraph.steps[workGraph.temp]
+            } else {
+                isLast = true
+                return workGraph.steps[workGraph.temp]
+            }
+    }
+
+    fun callStepPrev(): ArrayList<Edge> {
+            if (workGraph.temp > 0) {
+                if (!isNextStep)
+                    workGraph.temp--
+                else
+                    workGraph.temp -= 2
+                return workGraph.steps[workGraph.temp]
+            } else
+                return workGraph.steps[workGraph.temp]
+        }
 }

@@ -19,10 +19,12 @@ class Node(var name: String= "", var edges:Vector<Edge> = Vector<Edge>()){
         println("PRINTED: ${this.name}")
     }
 
-    fun printEdges(){
+    fun printEdges() : String{
+        var returnText = String()
         for (elem in this.edges){
-            elem.printEdge()
+            returnText += elem.printEdge()
         }
+        return returnText
     }
 
     fun addEdge(edge: Edge): Node {
