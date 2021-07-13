@@ -10,10 +10,13 @@ class KruskalWork {
 
     var vectorOfVertex: ArrayList<String> = ArrayList<String>()
     var graph = HashMap<String, Node>()
-    var resGraph: HashMap<String, Node> = graph.clone() as HashMap<String, Node>
+    var resGraph: HashMap<String, Node> = cloneGraph(graph) as HashMap<String, Node>
     var printGraph = ArrayList<Edge>()
     var allEdges = Vector<Edge>()
     var resEdgeVector = Vector<Edge>()
+    var temp = 0
+    var components = Vector<String>()
+    var steps = ArrayList<ArrayList<Edge>>()
 
 
 
@@ -54,6 +57,9 @@ class KruskalWork {
                 )
             )
         }
+        for (elem in graph){
+            components.addElement(elem.key)
+        }
         return this
     }
 
@@ -64,32 +70,68 @@ class KruskalWork {
         }
     }
     fun doKruskal(){
-        allEdges.sortBy { it -> it.weight }
+        allEdges.sortBy { it -> it.weight }     /*** Сортируем ребра */
 
-        val countVertex = vectorOfVertex.count()
-        var countOfAddedNodes = 0
         for (edge in allEdges){
-            if (!checkCycle(resGraph,edge)){
+            var temp = ArrayList<Edge>()
+            if (!cirle(edge.v1,edge.v2,components)){
+                compUniting(edge,components)
+                var edge1 = Edge(edge.v1,edge.v2,edge.weight, 0)
+                resGraph[edge.v1]?.addEdge(edge1)
+                var edge2 = Edge(edge.v2,edge.v1,edge.weight, 0)
+                resGraph[edge.v2]?.addEdge(edge2)
                 resEdgeVector.addElement(edge)
-                val edge1 = Edge(edge.v1,edge.v2,edge.weight, 0)
-                val edge2 = Edge(edge.v2, edge.v1, edge.weight, 0)
-                val froms = edge.v1
-                val tos = edge.v2
-                resGraph[froms]?.addEdge(edge1)
-                resGraph[tos]?.addEdge(edge2)
-                countOfAddedNodes++
             }
-            if (countOfAddedNodes == countVertex-1){
-                break
+            for(item in resEdgeVector){
+                temp.add(Edge(item.v1, item.v2, item.weight, 1))
             }
-        }
-
+//        compUniting(edge,components)
+//        var tmpGraph=cloneGraph(resGraph)
+//        if (!checkCycle(tmpGraph,edge)){
+//            var edge1 = Edge(edge.v1,edge.v2,edge.weight)
+//            resGraph[edge.v1]?.addEdge(edge1)
+//            var edge2 = Edge(edge.v2,edge.v1,edge.weight)
+//            resGraph[edge.v2]?.addEdge(edge2)
+//            resEdgeVector.addElement(edge)
+//        }
+            steps.add(temp)
+        }   //abdcf
+        printAllEdges(resEdgeVector)
+        println("==================")
+        printGraph(resGraph)
         var resLength =0.0
         for (elem in resEdgeVector){
             resLength += elem.weight
         }
-        printGraph(resGraph)
-        return
+        println(resLength)
+    }
+
+    fun whichRemove(v:String, components: Vector<String>): String {
+        for (str in components){
+            if (v in str){
+                return str
+            }
+        }
+        return "#"
+    }
+
+    fun cirle(v1: String,v2:String, components: Vector<String>):Boolean{
+        val obj1 = whichRemove(v1,components)
+        val obj2 = whichRemove(v2, components)
+        if (obj1 == obj2){
+            return true
+        }
+        return false
+    }
+
+    fun compUniting(edge: Edge,components: Vector<String>): Vector<String> {
+        var a = whichRemove(edge.v1,components)
+        var b = whichRemove(edge.v2,components)
+        components.removeElement(whichRemove(edge.v1,components))
+        components.removeElement(whichRemove(edge.v2,components))
+        components.addElement(a+b)
+        println(components)
+        return components
     }
 
     fun printGraph(graph: HashMap<String, Node>/*, a:Int*/){
@@ -102,10 +144,16 @@ class KruskalWork {
         }
     }
 
-    fun <String, Node> clone(original: HashMap<String, Node>): MutableMap<String, Node> {
-        val copy: MutableMap<String, Node> = HashMap()
-        copy.putAll(original)
-        return copy
+    fun cloneGraph(graph: HashMap<String, Node>):HashMap<String, Node>{
+        var newGraph = HashMap<String,Node>()
+
+        for (elem in graph){
+            var newNode = Node(elem.key, elem.value.edges)
+            newNode.degree=newNode.edges.size
+            newGraph.put(elem.key, newNode)
+        }
+
+        return newGraph
     }
 
     fun printMutableGraph(graph: MutableMap<String, Node>){
@@ -157,6 +205,8 @@ class KruskalWork {
         var cycle = true
         for (elem in graph){
             cycle = elem.value.degree>0
+            if(cycle)
+                return true
             //  printGraph(graph)
         }
         // println("HEY GRAPH - CYCLE? $cycle")
@@ -195,5 +245,6 @@ class KruskalWork {
         printGraph.clear()
         allEdges.clear()
         resEdgeVector.clear()
+        components.clear()
     }
 }

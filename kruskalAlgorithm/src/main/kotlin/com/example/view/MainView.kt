@@ -2,11 +2,12 @@ package com.example.view
 
 import com.example.Edge
 import com.example.KruskalController
-import com.example.KruskalWork
 import com.example.Vertex
 import javafx.geometry.Pos
+import javafx.scene.Scene
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
+import javafx.scene.layout.StackPane
 import javafx.scene.paint.Color
 import javafx.scene.shape.Circle
 import javafx.scene.shape.Line
@@ -15,11 +16,9 @@ import javafx.scene.text.Text
 import javafx.stage.FileChooser
 import javafx.stage.Stage
 import tornadofx.*
-import java.awt.event.ActionListener
 import java.io.File
 import java.io.FileInputStream
 import java.lang.Exception
-import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.math.atan
 import kotlin.math.cos
@@ -37,6 +36,7 @@ class MainView : View("Kruskal Algorithm") {
             menu("File") {
                 item("Open") {
                     action {
+                        kruskalController.callClearGraph()
                         val pathGraph: List<File> =
                             chooseFile("Choose graph file", extensions, null, FileChooserMode.Single)
                         if(pathGraph.isNotEmpty()) {
@@ -63,8 +63,30 @@ class MainView : View("Kruskal Algorithm") {
                 }
             }
             menu("Help") {
-                item("Help")
-                item("About")
+                item("Help"){
+                    action{
+                        val helpText = File("./src/main/resources/help.txt").readText()
+                        val helpLayout = StackPane()
+                        helpLayout.text(helpText)
+                        val scene = Scene(helpLayout, 1200.0, 200.0)
+                        val stage = Stage()
+                        stage.title = "Help"
+                        stage.scene = scene
+                        stage.show()
+                    }
+                }
+                item("About"){
+                    action{
+                        val aboutText = File("./src/main/resources/about.txt").readText()
+                        val aboutLayout = StackPane()
+                        aboutLayout.text(aboutText)
+                        val scene = Scene(aboutLayout, 800.0, 200.0)
+                        val stage = Stage()
+                        stage.title = "About"
+                        stage.scene = scene
+                        stage.show()
+                    }
+                }
             }
         }
         hbox {
@@ -78,10 +100,8 @@ class MainView : View("Kruskal Algorithm") {
                     //isDisable = false
                     action {
                         if (loaded) {
-                            tools.clear()
                             kruskalController.callDoKruskal()
-                            kruskalController.callUpdatePrintData()
-                            printGraphData = kruskalController.callGetGraph()
+                           // printGraphData = kruskalController.callStepNext()
                             printGraph()
                         }
                     }
@@ -90,10 +110,26 @@ class MainView : View("Kruskal Algorithm") {
 
             val nextImageView = ImageView(Image(FileInputStream("./src/main/resources/next.png")))
             button("Next Step", nextImageView) {
+                action{
+                    if(loaded){
+                        tools.clear()
+                        printGraphData = kruskalController.callStepNext()
+                        printGraph()
+                    }
+                }
             }
 
             val fastImageView = ImageView(Image(FileInputStream("./src/main/resources/fast-forward.png")))
             button("Fast End", fastImageView) {
+                action {
+                    if (loaded) {
+                        tools.clear()
+                        kruskalController.callDoKruskal()
+                        kruskalController.callUpdatePrintData()
+                        printGraphData = kruskalController.callGetGraph()
+                        printGraph()
+                    }
+                }
             }
 
             val clearImageView = ImageView(Image(FileInputStream("./src/main/resources/free.png")))
@@ -204,10 +240,6 @@ class MainView : View("Kruskal Algorithm") {
                 }
                 if(flag)
                     line.stroke = Color.RED
-                line.text("Hello")
-                //val txt = Text("Hello")
-               // line.text = Text("Hello")
-                //tools.add(line.text())
                 return line
             }
         }

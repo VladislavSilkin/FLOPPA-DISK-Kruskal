@@ -65,4 +65,14 @@ class KruskalController : Controller(){
         }
         return outputString
     }
+
+    fun callStepNext() : ArrayList<Edge>{
+        if(workGraph.temp != workGraph.steps.size) {
+            val returnData = workGraph.steps[workGraph.temp]
+            workGraph.temp++
+            return returnData
+        }
+        else
+            return ArrayList()
+    }
 }
