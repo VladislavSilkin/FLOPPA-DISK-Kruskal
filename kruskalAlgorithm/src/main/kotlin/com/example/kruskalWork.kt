@@ -1,7 +1,7 @@
 package com.example
 
 import Node
-import tornadofx.property
+import java.io.File
 import java.util.*
 import kotlin.collections.ArrayList
 import kotlin.collections.HashMap
@@ -10,11 +10,16 @@ class KruskalWork {
 
     var vectorOfVertex: ArrayList<String> = ArrayList<String>()
     var graph = HashMap<String, Node>()
-    var resGraph: HashMap<String, Node> = graph.clone() as HashMap<String, Node>
+    var resGraph: HashMap<String, Node> = cloneGraph(graph) as HashMap<String, Node>
     var printGraph = ArrayList<Edge>()
     var allEdges = Vector<Edge>()
     var resEdgeVector = Vector<Edge>()
-
+    var temp = 0
+    var components = Vector<String>()
+    var steps = ArrayList<ArrayList<Edge>>()
+    val resPrint = ArrayList<Edge>()
+    val logs = File("./src/main/resources/logs.txt")
+    var logText = String()
 
 
     fun createGraph(list: List<String>) : KruskalWork {
@@ -54,6 +59,9 @@ class KruskalWork {
                 )
             )
         }
+        for (elem in graph){
+            components.addElement(elem.key)
+        }
         return this
     }
 
@@ -63,129 +71,103 @@ class KruskalWork {
             printGraph.add(Edge(item.v1, item.v2, item.weight, 1))
         }
     }
-    fun doKruskal(){
-        allEdges.sortBy { it -> it.weight }
+    fun doKruskal() : Vector<Edge>{
+        allEdges.sortBy { it -> it.weight }     /*** Сортируем ребра */
 
-        val countVertex = vectorOfVertex.count()
-        var countOfAddedNodes = 0
         for (edge in allEdges){
-            if (!checkCycle(resGraph,edge)){
-                resEdgeVector.addElement(edge)
+            val temp = ArrayList<Edge>()
+            if (!cirle(edge.v1,edge.v2,components)){
+                compUniting(edge,components)
                 val edge1 = Edge(edge.v1,edge.v2,edge.weight, 0)
-                val edge2 = Edge(edge.v2, edge.v1, edge.weight, 0)
-                val froms = edge.v1
-                val tos = edge.v2
-                resGraph[froms]?.addEdge(edge1)
-                resGraph[tos]?.addEdge(edge2)
-                countOfAddedNodes++
-            }
-            if (countOfAddedNodes == countVertex-1){
-                break
+                resGraph[edge.v1]?.addEdge(edge1)
+                val edge2 = Edge(edge.v2,edge.v1,edge.weight, 0)
+                resGraph[edge.v2]?.addEdge(edge2)
+                resEdgeVector.addElement(edge)
+                for(item in resEdgeVector){
+                    temp.add(Edge(item.v1, item.v2, item.weight, 1))
+                    resPrint.add(Edge(item.v1, item.v2, item.weight, 1))
+                }
+                for(item in allEdges) {
+                    var flag = true
+                    for(item1 in temp) {
+                        if (item.v1 == item1.v1 && item.v2 == item1.v2 && item.weight == item1.weight && item.flag != item1.flag) {
+                            flag = false
+                            break
+                        }
+                    }
+                    if(flag)
+                        temp.add(item)
+                }
+                steps.add(temp)
             }
         }
-
+        steps.add(resPrint)
+        printAllEdges(resEdgeVector)
+        logText += "==================\n"
+        printGraph(resGraph)
         var resLength =0.0
         for (elem in resEdgeVector){
             resLength += elem.weight
         }
-        printGraph(resGraph)
-        return
+        logText += resLength
+        logs.writeText(logText)
+
+        return resEdgeVector
     }
 
-    fun printGraph(graph: HashMap<String, Node>/*, a:Int*/){
-//    println("Printed graph $a")
+    fun whichRemove(v:String, components: Vector<String>): String {
+        for (str in components){
+            if (v in str){
+                return str
+            }
+        }
+        return "#"
+    }
+
+    fun cirle(v1: String,v2:String, components: Vector<String>):Boolean{
+        val obj1 = whichRemove(v1,components)
+        val obj2 = whichRemove(v2, components)
+        if (obj1 == obj2){
+            return true
+        }
+        return false
+    }
+
+    fun compUniting(edge: Edge,components: Vector<String>): Vector<String> {
+        val a = whichRemove(edge.v1,components)
+        val b = whichRemove(edge.v2,components)
+        components.removeElement(whichRemove(edge.v1,components))
+        components.removeElement(whichRemove(edge.v2,components))
+        components.addElement(a+b)
+        logText += "${components}\n"
+        return components
+    }
+
+    fun printGraph(graph: HashMap<String, Node>){
         for (elem in graph){
-            print("${elem.key} : \n")
-            elem.value.printEdges()
-            println("Degree = ${elem.value.degree}")
-            print("\n")
+            logText += "${elem.key} : \n"
+            logText += elem.value.printEdges()
+            logText += "Degree = ${elem.value.degree}\n"
         }
     }
 
-    fun <String, Node> clone(original: HashMap<String, Node>): MutableMap<String, Node> {
-        val copy: MutableMap<String, Node> = HashMap()
-        copy.putAll(original)
-        return copy
-    }
+    fun cloneGraph(graph: HashMap<String, Node>):HashMap<String, Node>{
+        val newGraph = HashMap<String,Node>()
 
-    fun printMutableGraph(graph: MutableMap<String, Node>){
         for (elem in graph){
-            elem.value.printEdges()
+            val newNode = Node(elem.key, elem.value.edges)
+            newNode.degree=newNode.edges.size
+            newGraph.put(elem.key, newNode)
         }
+
+        return newGraph
     }
 
     fun printAllEdges(edges: Vector<Edge>){
-        println("All/Result Edges:")
+        logText += "All/Result Edges:\n"
         for (elem in edges){
-            elem.printEdge()
+            logText += elem.printEdge()
         }
-    }
-
-    fun isExsistOneDegree(graph: HashMap<String, Node>):Boolean{
-        var isExsist = false
-        for (elem in graph){
-            if (elem.value.degree == 1){
-                return true
-            }
-        }
-
-        return isExsist
-
-    }
-
-    fun isCycle(graph: HashMap<String, Node>) : Boolean{
-        //  var status = false // не цикл
-/*//
-//    for (elem in graph){        //делаем все вершины не просмотренными
-//      elem.value.clearStatus()
-//    }
-//
-//    for (elem in graph){
-//        dfs(elem.value, status)
-//        if (status == true){
-//            return true
-//        }
-//    }*/
-
-        while (isExsistOneDegree(graph)){
-            for (elem in graph){
-                if (elem.value.degree == 1){
-                    elem.value.removeNode(graph)
-                }
-            }
-        }
-        var cycle = true
-        for (elem in graph){
-            cycle = elem.value.degree>0
-            //  printGraph(graph)
-        }
-        // println("HEY GRAPH - CYCLE? $cycle")
-        return cycle
-    }
-
-    fun checkCycle(graph: HashMap<String, Node>, edge: Edge):Boolean{
-        val from = edge.v1
-        val to = edge.v2
-
-        var status = false
-        // var tmpGraph = clone(graph) as HashMap<String, Node>
-
-        // printGraph(tmpGraph)
-
-
-        var edge1 = Edge(edge.v1, edge.v2, edge.weight, 0)
-        var edge2 = Edge(edge.v2, edge.v1, edge.weight, 0)
-        graph[from]?.addEdge(edge1)
-        graph[to]?.addEdge(edge2)
-
-        status = isCycle(graph)
-        //printGraph(tmpGraph,9)
-        //remove edges
-        graph[from]?.removeEdge(edge1)
-        graph[to]?.removeEdge(edge2)
-
-        return status
-
     }
 
     fun clearGraph(){
@@ -195,5 +177,9 @@ class KruskalWork {
         printGraph.clear()
         allEdges.clear()
         resEdgeVector.clear()
+        components.clear()
+        steps.clear()
+        resPrint.clear()
+        temp = 0
     }
 }
