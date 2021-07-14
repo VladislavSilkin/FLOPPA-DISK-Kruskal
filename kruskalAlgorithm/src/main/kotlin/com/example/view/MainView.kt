@@ -43,7 +43,6 @@ class MainView : View("Kruskal Algorithm") {
             menu("File") {
                 item("Open") {
                     action {
-                        if(states[0]) {
                             kruskalController.callClearGraph()
                             tools.clear()
                             val pathGraph: List<File> =
@@ -63,7 +62,6 @@ class MainView : View("Kruskal Algorithm") {
                             states[1] = true
                             states[2] = false
                             states[3] = false
-                        }
                     }
                 }
                 item("Save") {

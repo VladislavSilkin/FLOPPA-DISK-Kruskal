@@ -5,9 +5,9 @@ import java.io.File
 
 class KruskalController : Controller() {
     private val workGraph = KruskalWork()
-    var isNextStep = false
     private var isStart = false
     var isLast = false
+    var isNextStep = false
     fun callCreateGraph(path: List<File>): KruskalWork {
         val fileGraph = File(path[0].toString())
 
@@ -54,20 +54,6 @@ class KruskalController : Controller() {
 
     fun callUpdatePrintData() {
         workGraph.modifyGraph()
-    }
-
-    fun getStringWithoutSpaces(changeString: String): String {
-        var outputString = String()
-        var counter = 0
-        for (item in changeString.split(" ")) {
-            if (item != "")
-                if(counter != changeString.split(" ").size-1)
-                    outputString += "$item "
-                else
-                    outputString += item
-            counter++
-        }
-        return outputString
     }
 
     fun callStart() : ArrayList<Edge> {
